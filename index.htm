@@ -1,0 +1,33 @@
+<html>
+<head>
+<script
+  src="https://code.jquery.com/jquery-2.2.4.min.js"
+  integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="
+  crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="app">
+hello world
+</div>
+<div id="suc">
+
+</div>
+<script language="javascript" type="text/javascript">
+$.getJSON( "http://35.187.56.96:8080/beef", function( data ) {
+  $('#app').html(JSON.stringify(data));
+   
+  var response = $.post( "http://35.187.56.96:8080/beef/AT856871629/reservation", {
+                "amount" : 9,
+                "type" : "basic",
+                "weigth" : 4,
+                "name" : "Luki Engerl",
+                "zip" : "1080",
+                "city" : "Wien",
+                "address" : "Rennweg 4",
+                "email" : "max@muster.at",
+                "phone" : "06991234123"
+  });  
+});
+</script>
+</body>
+</html>  
