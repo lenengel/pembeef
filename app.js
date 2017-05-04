@@ -29,13 +29,14 @@
 /* ================================================================================================================================
  REQUIRE
  ================================================================================================================================ */
-var express = require('express');
-var cors = require('cors');
-var https = require('https');
-var db = require('diskdb');
-var bodyParser = require('body-parser');
-var fs = require('fs');
-var MongoClient = require('mongodb').MongoClient;
+const express = require('express');
+const cors = require('cors');
+const https = require('https');
+const db = require('diskdb');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const MongoClient = require('mongodb').MongoClient;
+const nodemailer = require('nodemailer');
 
 /* ================================================================================================================================
  SSL OPTIONS
@@ -44,6 +45,17 @@ var sslOptions = {
 	cert: fs.readFileSync('/var/www/pb/crt/server.crt'),
 	key: fs.readFileSync('/var/www/pb/crt/server.key')
 };
+
+/* ================================================================================================================================
+ SSL OPTIONS
+ ================================================================================================================================ */
+let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'gmail.user@gmail.com',
+        pass: 'yourpass'
+    }
+});
 
 /* ================================================================================================================================
  EXPRESS SETTINGS
