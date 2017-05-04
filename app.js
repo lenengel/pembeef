@@ -47,15 +47,25 @@ var sslOptions = {
 };
 
 /* ================================================================================================================================
- SSL OPTIONS
+ GMAIL TRANSPORTER - create reusable transporter object using the default SMTP transport
  ================================================================================================================================ */
 let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'gmail.user@gmail.com',
-        pass: 'yourpass'
+        user: fs.readFileSync('/var/www/pb/gmailuser'),
+        pass: fs.readFileSync('/var/www/pb/gmailpwd')
     }
 });
+
+/* ================================================================================================================================
+ MAIL - setup email data with unicode symbols
+ ================================================================================================================================ */
+let mailOptions = {
+    from: '"PB" <info@pembeef.at>', // sender address
+    to: '', // list of receivers
+    subject: 'PB Order', // Subject line
+    text: '' // plain text body
+};
 
 /* ================================================================================================================================
  EXPRESS SETTINGS
@@ -159,6 +169,24 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 				if (errUpdateBeef)
 					return res.sendStatus(404);
 
+        mailOptions.to   = req.body.email;
+        mailOptions.html = "<b>Bestellung<b> <br><br>" + 
+                           "Vorname: " + req.body.firstname + "<br>",
+                           "Nachname: " + req.body.surname + "<br>",
+                           "Email: " + req.body.email + "<br>",
+                           "Telefon: " + req.body.phone + "<br>",
+                           "Anzahl: " + parseInt(req.body.amount) + "<br>",
+                           "Typ: " + req.body.type + "<br><br>",
+                           "Beste Grüße und einen schönen Tag ;)";
+                           
+        
+        // send mail with defined transport object
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                return console.log(error);
+            }
+            console.log('Mail %s sent ...', info.messageId, info.response);
+        });
 				res.sendStatus(200);
 			});
 	});
