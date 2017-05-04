@@ -49,13 +49,7 @@ var sslOptions = {
 /* ================================================================================================================================
  GMAIL TRANSPORTER - create reusable transporter object using the default SMTP transport
  ================================================================================================================================ */
-let transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: fs.readFileSync('/var/www/pb/gmailuser'),
-        pass: fs.readFileSync('/var/www/pb/gmailpwd')
-    }
-});
+let transporter = nodemailer.createTransport(JSON.parse(fs.readFileSync('/var/www/pb/gmailOptions.json')));
 
 /* ================================================================================================================================
  MAIL - setup email data with unicode symbols
@@ -170,18 +164,18 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 					return res.sendStatus(404);
 
         mailOptions.to   = req.body.email;
-        mailOptions.html = "<b>Bestellung<b> <br><br>" + 
-                           "Vorname: " + req.body.firstname + "<br>",
-                           "Nachname: " + req.body.surname + "<br>",
-                           "Email: " + req.body.email + "<br>",
-                           "Telefon: " + req.body.phone + "<br>",
-                           "Anzahl: " + parseInt(req.body.amount) + "<br>",
-                           "Typ: " + req.body.type + "<br><br>",
+        mailOptions.html = "<b>Bestellung</b> <br><br>" + 
+                           "Vorname: " + req.body.firstname + "<br>" +
+                           "Nachname: " + req.body.surname + "<br>" +
+                           "Email: " + req.body.email + "<br>" +
+                           "Telefon: " + req.body.phone + "<br>" +
+                           "Anzahl: " + parseInt(req.body.amount) + "<br>" +
+                           "Typ: " + req.body.type + "<br><br>" +
                            "Beste Grüße und einen schönen Tag ;)";
                            
         
         // send mail with defined transport object
-        transporter.sendMail(mailOptions, (error, info) => {
+        transporter.sendMail(mailOptions, function (error, info) {
             if (error) {
                 return console.log(error);
             }
