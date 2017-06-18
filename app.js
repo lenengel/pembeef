@@ -77,7 +77,7 @@ app.use(bodyParser.json())
  MONGO DB CONNECTION
  ================================================================================================================================ */
 // Use connect method to connect to the Server
-MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
+MongoClient.connect('mongodb://pb:ILEpwmiSm0f@localhost:27017/pb', function(dbError, db) {
 	if (dbError)
 		return console.error(dbError);
 
@@ -120,7 +120,7 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 	 ================================================================================================================================ */
 	app.post('/beef/:id/reservation', function (req, res) {
 		if (
-			!req.body || !req.body.hasOwnProperty("firstname") || !req.body.hasOwnProperty("surname") || !req.body.hasOwnProperty("email") || !req.body.hasOwnProperty("phone") || !req.body.hasOwnProperty("amount") || !req.body.hasOwnProperty("weigth") || !req.body.hasOwnProperty("type"))
+			!req.body || !req.body.hasOwnProperty("firstname") || !req.body.hasOwnProperty("surname") || !req.body.hasOwnProperty("email") || !req.body.hasOwnProperty("phone") || !req.body.hasOwnProperty("amount") || !req.body.hasOwnProperty("weigth") || !req.body.hasOwnProperty("type") || !req.body.hasOwnProperty("distributor"))
 			return res.sendStatus(400);
 
 		if (req.body.firstname.length < 2 ||
@@ -142,11 +142,13 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 						"streetnr": req.body.streetnr || "",
 						"zip": req.body.zip || "",
 						"city": req.body.city || "",
+						"info": req.body.info || "",
 						"email": req.body.email,
 						"phone": req.body.phone,
 						"amount": parseInt(req.body.amount),
 						"weigth": parseInt(req.body.weigth),
-						"type": req.body.type
+						"type": req.body.type,
+						"distributor": req.body.distributor
 					}],
 					$position: 0
 				}
@@ -169,8 +171,10 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
                            "Nachname: " + req.body.surname + "<br>" +
                            "Email: " + req.body.email + "<br>" +
                            "Telefon: " + req.body.phone + "<br>" +
+			   "Bemerkung: " + (req.body.info || "") + "<br>" + 
                            "Anzahl: " + parseInt(req.body.amount) + "<br>" +
-                           "Typ: " + req.body.type + "<br><br>" +
+                           "Typ: " + req.body.type + "<br>" + 
+			   "Verkäufer: " + req.body.distributor + "<br>" +
                            "Beste Grüße und einen schönen Tag ;)";
                            
         
