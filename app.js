@@ -29,13 +29,14 @@
 /* ================================================================================================================================
  REQUIRE
  ================================================================================================================================ */
-var express = require('express');
-var cors = require('cors');
-var https = require('https');
-var db = require('diskdb');
-var bodyParser = require('body-parser');
-var fs = require('fs');
-var MongoClient = require('mongodb').MongoClient;
+const express = require('express');
+const cors = require('cors');
+const https = require('https');
+const db = require('diskdb');
+const bodyParser = require('body-parser');
+const fs = require('fs');
+const MongoClient = require('mongodb').MongoClient;
+const nodemailer = require('nodemailer');
 
 /* ================================================================================================================================
  SSL OPTIONS
@@ -43,6 +44,21 @@ var MongoClient = require('mongodb').MongoClient;
 var sslOptions = {
 	cert: fs.readFileSync('/var/www/pb/crt/server.crt'),
 	key: fs.readFileSync('/var/www/pb/crt/server.key')
+};
+
+/* ================================================================================================================================
+ GMAIL TRANSPORTER - create reusable transporter object using the default SMTP transport
+ ================================================================================================================================ */
+let transporter = nodemailer.createTransport(JSON.parse(fs.readFileSync('/var/www/pb/gmailOptions.json')));
+
+/* ================================================================================================================================
+ MAIL - setup email data with unicode symbols
+ ================================================================================================================================ */
+let mailOptions = {
+    from: '"PB" <info@pembeef.at>', // sender address
+    to: '', // list of receivers
+    subject: 'PB Order', // Subject line
+    text: '' // plain text body
 };
 
 /* ================================================================================================================================
@@ -61,7 +77,7 @@ app.use(bodyParser.json())
  MONGO DB CONNECTION
  ================================================================================================================================ */
 // Use connect method to connect to the Server
-MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
+MongoClient.connect('mongodb://pb:ILEpwmiSm0f@localhost:27017/pb', function(dbError, db) {
 	if (dbError)
 		return console.error(dbError);
 
@@ -104,7 +120,7 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 	 ================================================================================================================================ */
 	app.post('/beef/:id/reservation', function (req, res) {
 		if (
-			!req.body || !req.body.hasOwnProperty("firstname") || !req.body.hasOwnProperty("surname") || !req.body.hasOwnProperty("email") || !req.body.hasOwnProperty("phone") || !req.body.hasOwnProperty("amount") || !req.body.hasOwnProperty("weigth") || !req.body.hasOwnProperty("type"))
+			!req.body || !req.body.hasOwnProperty("firstname") || !req.body.hasOwnProperty("surname") || !req.body.hasOwnProperty("email") || !req.body.hasOwnProperty("phone") || !req.body.hasOwnProperty("amount") || !req.body.hasOwnProperty("weigth") || !req.body.hasOwnProperty("type") || !req.body.hasOwnProperty("distributor"))
 			return res.sendStatus(400);
 
 		if (req.body.firstname.length < 2 ||
@@ -126,11 +142,13 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 						"streetnr": req.body.streetnr || "",
 						"zip": req.body.zip || "",
 						"city": req.body.city || "",
+						"info": req.body.info || "",
 						"email": req.body.email,
 						"phone": req.body.phone,
 						"amount": parseInt(req.body.amount),
 						"weigth": parseInt(req.body.weigth),
-						"type": req.body.type
+						"type": req.body.type,
+						"distributor": req.body.distributor
 					}],
 					$position: 0
 				}
@@ -147,6 +165,26 @@ MongoClient.connect('mongodb://localhost:27017/pb', function(dbError, db) {
 				if (errUpdateBeef)
 					return res.sendStatus(404);
 
+        mailOptions.to   = req.body.email;
+        mailOptions.html = "<b>Bestellung</b> <br><br>" + 
+                           "Vorname: " + req.body.firstname + "<br>" +
+                           "Nachname: " + req.body.surname + "<br>" +
+                           "Email: " + req.body.email + "<br>" +
+                           "Telefon: " + req.body.phone + "<br>" +
+			   "Bemerkung: " + (req.body.info || "") + "<br>" + 
+                           "Anzahl: " + parseInt(req.body.amount) + "<br>" +
+                           "Typ: " + req.body.type + "<br>" + 
+			   "Verkäufer: " + req.body.distributor + "<br>" +
+                           "Beste Grüße und einen schönen Tag ;)";
+                           
+        
+        // send mail with defined transport object
+        transporter.sendMail(mailOptions, function (error, info) {
+            if (error) {
+                return console.log(error);
+            }
+            console.log('Mail %s sent ...', info.messageId, info.response);
+        });
 				res.sendStatus(200);
 			});
 	});
