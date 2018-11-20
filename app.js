@@ -31,8 +31,9 @@
  ================================================================================================================================ */
 const express = require('express');
 const cors = require('cors');
-const https = require('https');
+const http = require('http');
 const db = require('diskdb');
+const moment = require('moment-timezone');
 const bodyParser = require('body-parser');
 const fs = require('fs');
 const MongoClient = require('mongodb').MongoClient;
@@ -41,10 +42,10 @@ const nodemailer = require('nodemailer');
 /* ================================================================================================================================
  SSL OPTIONS
  ================================================================================================================================ */
-var sslOptions = {
-	cert: fs.readFileSync('/var/www/pb/crt/server.crt'),
-	key: fs.readFileSync('/var/www/pb/crt/server.key')
-};
+//var sslOptions = {
+//	cert: fs.readFileSync('/var/www/pb/crt/server.crt'),
+//	key: fs.readFileSync('/var/www/pb/crt/server.key')
+//};
 
 /* ================================================================================================================================
  GMAIL TRANSPORTER - create reusable transporter object using the default SMTP transport
@@ -136,6 +137,7 @@ MongoClient.connect('mongodb://pb:ILEpwmiSm0f@localhost:27017/pb', function(dbEr
 			$push: {
 				"reservations": {
 					$each: [{
+						"stamp": moment.utc().format('hh:mm:ss DD.MM.YYYY'),
 						"firstname": req.body.firstname,
 						"surname": req.body.surname,
 						"street": req.body.street || "",
@@ -165,27 +167,43 @@ MongoClient.connect('mongodb://pb:ILEpwmiSm0f@localhost:27017/pb', function(dbEr
 				if (errUpdateBeef)
 					return res.sendStatus(404);
 
-        mailOptions.to   = req.body.email;
-        mailOptions.html = "<b>Bestellung</b> <br><br>" + 
-                           "Vorname: " + req.body.firstname + "<br>" +
-                           "Nachname: " + req.body.surname + "<br>" +
-                           "Email: " + req.body.email + "<br>" +
-                           "Telefon: " + req.body.phone + "<br>" +
-			   "Bemerkung: " + (req.body.info || "") + "<br>" + 
-                           "Anzahl: " + parseInt(req.body.amount) + "<br>" +
-                           "Typ: " + req.body.type + "<br>" + 
-			   "Verkäufer: " + req.body.distributor + "<br>" +
-                           "Beste Grüße und einen schönen Tag ;)";
-                           
-        
-        // send mail with defined transport object
-        transporter.sendMail(mailOptions, function (error, info) {
-            if (error) {
-                return console.log(error);
-            }
-            console.log('Mail %s sent ...', info.messageId, info.response);
+        db.collection('order').find({'amaId': req.params.id}).toArray(function (errGetBeef, beef) {
+          if (errGetBeef)
+            return res.sendStatus(404);
+          
+          db.collection('order-greisslerei').insertOne({
+						"Datum": moment.utc().tz("Europe/Vienna").format('hh:mm:ss DD.MM.YYYY'),
+						"Vorname": req.body.firstname,
+						"Nachname": req.body.surname,
+						"Telefon": req.body.phone,
+						"Anzahl": parseInt(req.body.amount),
+            "Info": req.body.info || "",
+            "Beef": beef[0]['name'],
+            "BeefOM": beef[0]['amaId']
+					});        
+          
+          mailOptions.to   = "info@pembeef.at;heimat@d-greisslerei.at";
+          mailOptions.html = "<b>Bestellung</b> <br><br>" + 
+                             "Vorname: " + req.body.firstname + "<br>" +
+                             "Nachname: " + req.body.surname + "<br>" +
+                             "Email: " + req.body.email + "<br>" +
+                             "Telefon: " + req.body.phone + "<br>" +
+           "Bemerkung: " + (req.body.info || "") + "<br>" + 
+                             "Anzahl: " + parseInt(req.body.amount) + "<br>" +
+                             "Typ: " + req.body.type + "<br>" + 
+           "Verkäufer: " + req.body.distributor + "<br>" +
+                             "Beste Grüße und einen schönen Tag ;)";
+                             
+          
+          // send mail with defined transport object
+          transporter.sendMail(mailOptions, function (error, info) {
+              if (error) {
+                  return console.log(error);
+              }
+              console.log('Mail %s sent ...', info.messageId, info.response);
+          });
+          res.sendStatus(200);
         });
-				res.sendStatus(200);
 			});
 	});
 });
@@ -193,7 +211,7 @@ MongoClient.connect('mongodb://pb:ILEpwmiSm0f@localhost:27017/pb', function(dbEr
 /* ================================================================================================================================
  START PB API
  ================================================================================================================================ */
-var server = https.createServer(sslOptions, app);
+var server = http.createServer(app);
 
 server.listen(8080, function(){
 	console.log("pb api is running at port 8080")
